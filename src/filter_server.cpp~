@@ -54,7 +54,7 @@ void filterCallback(const sensor_msgs::PointCloud2::ConstPtr& original_pc)
   //pass.setFilterLimitsNegative (true);
   pass.filter(*cloud_transformed);
   */
-  
+  //std::cout << *cloud_transformed << std::endl;
   pcl::PassThrough<sensor_msgs::PointCloud2>pass;
   pass.setInputCloud(cloud_transformed);
   pass.setFilterFieldName ("x");
