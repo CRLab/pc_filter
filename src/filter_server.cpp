@@ -1,6 +1,6 @@
 #include "ros/ros.h"
-#include <pcl/ros/conversions.h>
-#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+//#include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <pcl/filters/passthrough.h>
 #include <pcl_ros/transforms.h>
@@ -12,13 +12,16 @@ ros::Publisher filtered_pc_pub;
 tf::TransformListener *tf_listener;
 
 
-void filterCallback(const sensor_msgs::PointCloud2::ConstPtr& original_pc)
+void filterCallback(const sensor_msgs::PointCloud2::ConstPtr& sensor_message_pc)
 {
 
-  sensor_msgs::PointCloud2::Ptr cloud_transformed(new sensor_msgs::PointCloud2());
-  sensor_msgs::PointCloud2::Ptr cloud_filtered(new sensor_msgs::PointCloud2());
-  sensor_msgs::PointCloud2::Ptr cloud_transformed_back(new sensor_msgs::PointCloud2());
-
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_transformed(new pcl::PointCloud<pcl::PointXYZRGB>());
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZRGB>());
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_transformed_back(new pcl::PointCloud<pcl::PointXYZRGB>());
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr original_pc(new pcl::PointCloud<pcl::PointXYZRGB>());
+  pcl::PCLPointCloud2 original_pc2;
+  pcl_conversions::toPCL(*sensor_message_pc, original_pc2);
+  pcl::fromPCLPointCloud2(original_pc2, *original_pc);
 
   tf::StampedTransform transform;
   ros::Time now = ros::Time::now();
@@ -28,10 +31,11 @@ void filterCallback(const sensor_msgs::PointCloud2::ConstPtr& original_pc)
 
   Eigen::Matrix4f eigen_transform;
   pcl_ros::transformAsMatrix (transform, eigen_transform);
-  pcl_ros::transformPointCloud (eigen_transform, *original_pc, *cloud_transformed);
+  pcl::transformPointCloud (*original_pc, *cloud_transformed, eigen_transform);
 
 
-  pcl::PassThrough<sensor_msgs::PointCloud2>pass;
+  
+  pcl::PassThrough<pcl::PointXYZRGB >pass;
   pass.setInputCloud(cloud_transformed);
   pass.setFilterFieldName ("x");
   pass.setFilterLimits (-1.0, 0.15);
@@ -50,8 +54,13 @@ void filterCallback(const sensor_msgs::PointCloud2::ConstPtr& original_pc)
 		      *tf_listener);
   cloud_transformed_back->header.frame_id = "/camera_rgb_optical_frame";
 
+  sensor_msgs::PointCloud2 cloud_transformed_back_msg;
+  pcl::PCLPointCloud2 cloud_transformed_back_pc2;
+  pcl::toPCLPointCloud2(*cloud_transformed, cloud_transformed_back_pc2);
   
-  filtered_pc_pub.publish(*cloud_transformed_back);
+  pcl_conversions::fromPCL(cloud_transformed_back_pc2, cloud_transformed_back_msg);
+  filtered_pc_pub.publish(cloud_transformed_back_msg);
+  
 }
 
 int main(int argc, char **argv)
