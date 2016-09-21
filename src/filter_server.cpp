@@ -16,7 +16,9 @@ void filterCallback(const sensor_msgs::PointCloud2::ConstPtr& sensor_message_pc)
 {
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_transformed(new pcl::PointCloud<pcl::PointXYZRGB>());
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZRGB>());
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered_x(new pcl::PointCloud<pcl::PointXYZRGB>());
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered_y(new pcl::PointCloud<pcl::PointXYZRGB>());
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered_z(new pcl::PointCloud<pcl::PointXYZRGB>());
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_transformed_back(new pcl::PointCloud<pcl::PointXYZRGB>());
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr original_pc(new pcl::PointCloud<pcl::PointXYZRGB>());
   pcl::PCLPointCloud2 original_pc2;
@@ -28,39 +30,42 @@ void filterCallback(const sensor_msgs::PointCloud2::ConstPtr& sensor_message_pc)
   tf_listener->waitForTransform ("/world", "/camera_rgb_optical_frame", now, ros::Duration(4.0));
   tf_listener->lookupTransform ("/world", "/camera_rgb_optical_frame", now, transform);
 
-
   Eigen::Matrix4f eigen_transform;
   pcl_ros::transformAsMatrix (transform, eigen_transform);
   pcl::transformPointCloud (*original_pc, *cloud_transformed, eigen_transform);
-
-
   
   pcl::PassThrough<pcl::PointXYZRGB >pass;
   pass.setInputCloud(cloud_transformed);
   pass.setFilterFieldName ("x");
-  pass.setFilterLimits (-1.0, 0.15);
-  pass.filter(*cloud_transformed);
+  pass.setFilterLimits (-1.0, 0.25);
+  pass.filter(*cloud_filtered_x);
 
-
-  pass.setInputCloud(cloud_transformed);
+  pass.setInputCloud(cloud_filtered_x);
   pass.setFilterFieldName ("y");
-  pass.setFilterLimits (-0.15, 1.0);
-  pass.filter(*cloud_filtered);
-  
+  pass.setFilterLimits (-100.0, 100.0);
+  //pass.setFilterLimits (-0.0, 1.0);
+  pass.filter(*cloud_filtered_y);
 
+  pass.setInputCloud(cloud_filtered_y);
+  pass.setFilterFieldName ("z");
+  pass.setFilterLimits (-100.01, 100.0);
+  //pass.setFilterLimits (0.01, 1.0);
+  pass.filter(*cloud_filtered_z);
+
+  cloud_filtered_z->header.frame_id = "/world";
   pcl_ros::transformPointCloud("/camera_rgb_optical_frame",
-		      *cloud_filtered,
+		      *cloud_filtered_z,
 		      *cloud_transformed_back,
 		      *tf_listener);
   cloud_transformed_back->header.frame_id = "/camera_rgb_optical_frame";
 
   sensor_msgs::PointCloud2 cloud_transformed_back_msg;
   pcl::PCLPointCloud2 cloud_transformed_back_pc2;
-  pcl::toPCLPointCloud2(*cloud_transformed, cloud_transformed_back_pc2);
-  
+  pcl::toPCLPointCloud2(*cloud_transformed_back, cloud_transformed_back_pc2);
+
   pcl_conversions::fromPCL(cloud_transformed_back_pc2, cloud_transformed_back_msg);
   filtered_pc_pub.publish(cloud_transformed_back_msg);
-  
+
 }
 
 int main(int argc, char **argv)
