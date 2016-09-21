@@ -23,18 +23,39 @@
 <!--  <node pkg="nodelet" type="nodelet" name="xpassthrough" args="load pcl/PassThrough pcl_manager" output="screen">
        <remap from="~input" to="$(arg input_topic)" />
        <remap from="~output" to="$(arg input_topic)_xfiltered" />
+       <rosparam>
+         filter_field_name: x
+         filter_limit_min: -1.0
+         filter_limit_max: .15
+         filter_limit_negative: False
+         input_frame: 'world' 
+       </rosparam>
      </node>  
 
 
      <node pkg="nodelet" type="nodelet" name="ypassthrough" args="load pcl/PassThrough pcl_manager" output="screen">
        <remap from="~input" to="$(arg input_topic)_xfiltered" />
        <remap from="~output" to="$(arg input_topic)_xyfiltered" />
-
+       <rosparam>
+         filter_field_name: y
+         filter_limit_min: -.15
+         filter_limit_max: 1.0
+         filter_limit_negative: False
+         input_frame: 'world'
+       </rosparam>
      </node>  
 
      <node pkg="nodelet" type="nodelet" name="zpassthrough" args="load pcl/PassThrough pcl_manager" output="screen">
        <remap from="~input" to="$(arg input_topic)_xyfiltered" />
        <remap from="~output" to="$(arg output_topic)" />
+
+       <rosparam>
+         filter_field_name: z
+         filter_limit_min: 0.01
+         filter_limit_max: 0.5
+         filter_limit_negative: False
+         input_frame: 'world'
+       </rosparam>
      </node>  
 -->
 
