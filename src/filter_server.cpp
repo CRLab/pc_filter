@@ -26,9 +26,19 @@ void filterCallback(const sensor_msgs::PointCloud2::ConstPtr& sensor_message_pc)
   pcl::fromPCLPointCloud2(original_pc2, *original_pc);
 
   tf::StampedTransform transform;
-  ros::Time now = ros::Time::now();
-  tf_listener->waitForTransform ("/world", "/camera_rgb_optical_frame", now, ros::Duration(4.0));
-  tf_listener->lookupTransform ("/world", "/camera_rgb_optical_frame", now, transform);
+  ros::Time now = sensor_message_pc->header.stamp;
+  bool success = false;
+  while (!success) {
+    try {
+      tf_listener->waitForTransform ("/world", "/camera_rgb_optical_frame", now, ros::Duration(3.0));
+      tf_listener->lookupTransform ("/world", "/camera_rgb_optical_frame", now, transform);
+      success = true;
+    } catch (tf::ExtrapolationException e) {
+      ROS_DEBUG("error: %s", e.what());
+    }
+    sleep(0.1);
+  }
+
 
   Eigen::Matrix4f eigen_transform;
   pcl_ros::transformAsMatrix (transform, eigen_transform);
@@ -42,14 +52,12 @@ void filterCallback(const sensor_msgs::PointCloud2::ConstPtr& sensor_message_pc)
 
   pass.setInputCloud(cloud_filtered_x);
   pass.setFilterFieldName ("y");
-  pass.setFilterLimits (-100.0, 100.0);
-  //pass.setFilterLimits (-0.0, 1.0);
+  pass.setFilterLimits (-2.0, 0.0);
   pass.filter(*cloud_filtered_y);
 
   pass.setInputCloud(cloud_filtered_y);
   pass.setFilterFieldName ("z");
-  pass.setFilterLimits (-100.01, 100.0);
-  //pass.setFilterLimits (0.01, 1.0);
+  pass.setFilterLimits (0.01, 1.0);
   pass.filter(*cloud_filtered_z);
 
   cloud_filtered_z->header.frame_id = "/world";
