@@ -2,62 +2,29 @@
   <arg name="input_topic" default="/camera/depth_registered/points" />
   <arg name="output_topic" default="/filtered_pc" />
   <arg name="workspace_name" default="staubli" />
-  <arg name="use_camera_nodelet" default="True"/>
 
   <rosparam command="delete" param="xpassthrough"/>
   <rosparam command="delete" param="ypassthrough"/>
   <rosparam command="delete" param="zpassthrough"/>
   <rosparam command="load" file="$(find pc_filter)/configs/$(arg workspace_name).workspace.yaml"/>
  <!-- Launch nodelet manager -->
-  <node pkg="nodelet" type="nodelet" name="pcl_manager"  args="manager" output="screen" unless="$(arg use_camera_nodelet)"/>
-
-  <arg name="nodelet_manager" value="pcl_namager" unless="$(arg use_camera_nodelet)"/>
-  <arg name="nodelet_manager" value="/camera/camera_nodelet_manager" if="$(arg use_camera_nodelet)"/>
-
-  <node pkg="nodelet" type="nodelet" name="cropbox" args="load pcl/CropBox $(arg nodelet_manager)">
-       <remap from="~input" to="$(arg input_topic)" />
-       <remap from="~output" to="$(arg output_topic)" />
-  </node>  	
+  <node pkg="nodelet" type="nodelet" name="pcl_manager"  args="manager" output="screen"/>
   <!-- Run a passthrough filter to restrict to input box -->
 
-<!--  <node pkg="nodelet" type="nodelet" name="xpassthrough" args="load pcl/PassThrough pcl_manager" output="screen">
+  <node pkg="nodelet" type="nodelet" name="xpassthrough" args="load pcl/PassThrough pcl_manager" output="screen">
        <remap from="~input" to="$(arg input_topic)" />
        <remap from="~output" to="$(arg input_topic)_xfiltered" />
-       <rosparam>
-         filter_field_name: x
-         filter_limit_min: -1.0
-         filter_limit_max: .15
-         filter_limit_negative: False
-         input_frame: 'world' 
-       </rosparam>
      </node>  
 
 
      <node pkg="nodelet" type="nodelet" name="ypassthrough" args="load pcl/PassThrough pcl_manager" output="screen">
        <remap from="~input" to="$(arg input_topic)_xfiltered" />
        <remap from="~output" to="$(arg input_topic)_xyfiltered" />
-       <rosparam>
-         filter_field_name: y
-         filter_limit_min: -.15
-         filter_limit_max: 1.0
-         filter_limit_negative: False
-         input_frame: 'world'
-       </rosparam>
+
      </node>  
 
      <node pkg="nodelet" type="nodelet" name="zpassthrough" args="load pcl/PassThrough pcl_manager" output="screen">
        <remap from="~input" to="$(arg input_topic)_xyfiltered" />
        <remap from="~output" to="$(arg output_topic)" />
-
-       <rosparam>
-         filter_field_name: z
-         filter_limit_min: 0.01
-         filter_limit_max: 0.5
-         filter_limit_negative: False
-         input_frame: 'world'
-       </rosparam>
      </node>  
--->
-
 </launch> 
-
