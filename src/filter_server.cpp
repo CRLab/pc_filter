@@ -12,6 +12,13 @@ ros::Publisher filtered_pc_pub;
 tf::TransformListener *tf_listener;
 ros::NodeHandle* n;
 
+float x_clip_min_;
+float x_clip_max_;
+float y_clip_min_;
+float y_clip_max_;
+float z_clip_min_;
+float z_clip_max_;
+
 void filterCallback(const sensor_msgs::PointCloud2ConstPtr& sensor_message_pc)
 {
   pcl::PCLPointCloud2 original_pc2;
@@ -37,26 +44,20 @@ void filterCallback(const sensor_msgs::PointCloud2ConstPtr& sensor_message_pc)
           *cloud_transformed,
           *tf_listener);
 
-  float x_min = -0.2;
-  float x_max = 0.23;
   pcl::PassThrough<pcl::PointXYZRGB > pass;
   pass.setInputCloud(cloud_transformed);
   pass.setFilterFieldName ("x");
-  pass.setFilterLimits (x_min, x_max);
+  pass.setFilterLimits (x_clip_min_, x_clip_max_);
   pass.filter(*cloud_filtered_x);
 
-  float y_min = -0.65;
-  float y_max = 0.1;
   pass.setInputCloud(cloud_filtered_x);
   pass.setFilterFieldName ("y");
-  pass.setFilterLimits (y_min, y_max);
+  pass.setFilterLimits (y_clip_min_, y_clip_max_);
   pass.filter(*cloud_filtered_xy);
 
-  float z_min = 0.0;
-  float z_max = 0.4;
   pass.setInputCloud(cloud_filtered_xy);
   pass.setFilterFieldName ("z");
-  pass.setFilterLimits (z_min, z_max);
+  pass.setFilterLimits (z_clip_min_, z_clip_max_);
   pass.filter(*cloud_filtered_xyz);
 
   cloud_filtered_xyz->header.frame_id = "/world";
@@ -82,9 +83,23 @@ int main(int argc, char **argv)
   n = new ros::NodeHandle();
   tf::TransformListener tfl;
   tf_listener = &tfl;
-  filtered_pc_pub = n->advertise<sensor_msgs::PointCloud2>("filtered_pc", 1);
+
+  /*n->getParam("x_clip_min", x_clip_min_);
+  n->getParam("x_clip_max", x_clip_max_);
+  n->getParam("y_clip_min", y_clip_min_);
+  n->getParam("y_clip_max", y_clip_max_);
+  n->getParam("z_clip_min", z_clip_min_);
+  n->getParam("z_clip_max", z_clip_max_);*/
+
+  x_clip_min_ = -0.2;
+  x_clip_max_ = 0.23;
+  y_clip_min_ = -0.65;
+  y_clip_max_ = 0.1;
+  z_clip_min_ = 0.0;
+  z_clip_max_ = 0.4;
 
   ros::Subscriber original_pc_sub = n->subscribe("/camera/depth_registered/points", 1, filterCallback);
+  filtered_pc_pub = n->advertise<sensor_msgs::PointCloud2>("filtered_pc", 1);
 
   ros::spin();
   return 0;
