@@ -1,3 +1,5 @@
 <launch>
-  <node name="pc_filter" pkg="pc_filter" type="server" respawn="true"/>  
+<arg name="workspace_name" default="fetch22" />
+<rosparam command="load" file="$(find pc_filter)/configs/$(arg workspace_name).workspace.yaml" />
+  <node name="pc_filter" pkg="pc_filter" type="server" output="screen"/>  
 </launch>
