@@ -1,6 +1,5 @@
 #include "ros/ros.h"
 #include <pcl_conversions/pcl_conversions.h>
-//#include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <pcl/filters/passthrough.h>
 #include <pcl_ros/transforms.h>
@@ -10,67 +9,113 @@
 
 ros::Publisher filtered_pc_pub;
 tf::TransformListener *tf_listener;
+ros::NodeHandle* n;
 
+float x_clip_min_;
+float x_clip_max_;
+float y_clip_min_;
+float y_clip_max_;
+float z_clip_min_;
+float z_clip_max_;
 
-void filterCallback(const sensor_msgs::PointCloud2::ConstPtr& sensor_message_pc)
+std::string frame_id;
+std::string pc_topic;
+
+void filterCallback(const sensor_msgs::PointCloud2ConstPtr& sensor_message_pc)
 {
-
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_transformed(new pcl::PointCloud<pcl::PointXYZRGB>());
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZRGB>());
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_transformed_back(new pcl::PointCloud<pcl::PointXYZRGB>());
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr original_pc(new pcl::PointCloud<pcl::PointXYZRGB>());
+  ROS_INFO("Filtering PointCloud Callback");
   pcl::PCLPointCloud2 original_pc2;
   pcl_conversions::toPCL(*sensor_message_pc, original_pc2);
-  pcl::fromPCLPointCloud2(original_pc2, *original_pc);
 
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr original_pc(new pcl::PointCloud<pcl::PointXYZRGB>());
+  pcl::fromPCLPointCloud2(original_pc2, *original_pc);
+ 
   tf::StampedTransform transform;
   ros::Time now = ros::Time::now();
-  tf_listener->waitForTransform ("/world", "/camera_rgb_optical_frame", now, ros::Duration(4.0));
-  tf_listener->lookupTransform ("/world", "/camera_rgb_optical_frame", now, transform);
+  ROS_INFO("Waiting for world Transform");
+  tf_listener->waitForTransform ("/world", frame_id, now, ros::Duration(2.0));
+  ROS_INFO("Looking up Transform");
+  tf_listener->lookupTransform ("/world", frame_id, now, transform);
+  ROS_INFO("Finished Look up Transform");
+ 
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_transformed(new pcl::PointCloud<pcl::PointXYZRGB>());
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered_x(new pcl::PointCloud<pcl::PointXYZRGB>());
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered_xy(new pcl::PointCloud<pcl::PointXYZRGB>());
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered_xyz(new pcl::PointCloud<pcl::PointXYZRGB>());
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_transformed_back(new pcl::PointCloud<pcl::PointXYZRGB>());
 
+  original_pc->header.frame_id = frame_id; 
+  pcl_ros::transformPointCloud("/world",
+          *original_pc,
+          *cloud_transformed,
+          *tf_listener);
 
-  Eigen::Matrix4f eigen_transform;
-  pcl_ros::transformAsMatrix (transform, eigen_transform);
-  pcl::transformPointCloud (*original_pc, *cloud_transformed, eigen_transform);
-
-
-  
-  pcl::PassThrough<pcl::PointXYZRGB >pass;
+  pcl::PassThrough<pcl::PointXYZRGB > pass;
+ 
+  ROS_INFO_STREAM("filtercloudsize before x: " << cloud_transformed->size());
+ 
   pass.setInputCloud(cloud_transformed);
   pass.setFilterFieldName ("x");
-  pass.setFilterLimits (-1.0, 0.15);
-  pass.filter(*cloud_transformed);
+  pass.setFilterLimits (x_clip_min_, x_clip_max_);
+  pass.filter(*cloud_filtered_x);
 
-
-  pass.setInputCloud(cloud_transformed);
-  pass.setFilterFieldName ("y");
-  pass.setFilterLimits (-0.15, 1.0);
-  pass.filter(*cloud_filtered);
+  ROS_INFO_STREAM("filtercloudsize before y: " << cloud_filtered_x->size());
   
+  pass.setInputCloud(cloud_filtered_x);
+  pass.setFilterFieldName ("y");
+  pass.setFilterLimits (y_clip_min_, y_clip_max_);
+  pass.filter(*cloud_filtered_xy);
 
-  pcl_ros::transformPointCloud("/camera_rgb_optical_frame",
-		      *cloud_filtered,
+  ROS_INFO_STREAM("filtercloudsize before z: " << cloud_filtered_xy->size());
+  
+  pass.setInputCloud(cloud_filtered_xy); 
+  pass.setFilterFieldName ("z");
+  pass.setFilterLimits (z_clip_min_, z_clip_max_);
+  pass.filter(*cloud_filtered_xyz);
+
+  cloud_filtered_xyz->header.frame_id = "/world";
+  pcl_ros::transformPointCloud(frame_id,
+		      *cloud_filtered_xyz,
 		      *cloud_transformed_back,
 		      *tf_listener);
-  cloud_transformed_back->header.frame_id = "/camera_rgb_optical_frame";
+
+  cloud_transformed_back->header.frame_id = frame_id;
+
+  pcl::PCLPointCloud2 cloud_transformed_back_pc2;
+  pcl::toPCLPointCloud2(*cloud_transformed_back, cloud_transformed_back_pc2);
 
   sensor_msgs::PointCloud2 cloud_transformed_back_msg;
-  pcl::PCLPointCloud2 cloud_transformed_back_pc2;
-  pcl::toPCLPointCloud2(*cloud_transformed, cloud_transformed_back_pc2);
-  
   pcl_conversions::fromPCL(cloud_transformed_back_pc2, cloud_transformed_back_msg);
+  ROS_INFO("filtercloudsize: ");
+  ROS_INFO_STREAM(cloud_transformed_back->size());
   filtered_pc_pub.publish(cloud_transformed_back_msg);
-  
 }
 
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "filteredpcserver");
-  ros::NodeHandle n;
+  ros::NodeHandle n_;
   tf::TransformListener tfl;
   tf_listener = &tfl;
-  filtered_pc_pub = n.advertise<sensor_msgs::PointCloud2>("filtered_pc", 1);
-  ros::Subscriber original_pc_sub = n.subscribe("/camera/depth_registered/points", 1, filterCallback);
+  n = &n_;
+
+  n_.getParam("/xpassthrough/filter_limit_min", x_clip_min_);
+  n_.getParam("/xpassthrough/filter_limit_max", x_clip_max_); 
+  n_.getParam("/ypassthrough/filter_limit_min", y_clip_min_);
+  n_.getParam("/ypassthrough/filter_limit_max", y_clip_max_); 
+  n_.getParam("/zpassthrough/filter_limit_min", z_clip_min_);
+  n_.getParam("/zpassthrough/filter_limit_max", z_clip_max_);
+  n_.getParam("frame_id", frame_id);
+  n_.getParam("pc_topic", pc_topic);
+
+  ros::Time now = ros::Time::now();
+  ROS_INFO("WAITING for Checkerboard detection to find world frame");
+ 
+  tf_listener->waitForTransform ("/world", frame_id, now, ros::Duration(10.0));
+  ROS_INFO("Checkerboard detection has found world frame or TIMED OUT!");
+
+  ros::Subscriber original_pc_sub = n_.subscribe(pc_topic, 1, filterCallback);
+  filtered_pc_pub = n_.advertise<sensor_msgs::PointCloud2>("filtered_pc", 1);
 
   ros::spin();
   return 0;
