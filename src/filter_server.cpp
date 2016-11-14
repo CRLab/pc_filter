@@ -55,16 +55,16 @@ void filterCallback(const sensor_msgs::PointCloud2ConstPtr& sensor_message_pc)
   pass.setFilterLimits (y_clip_min_, y_clip_max_);
   pass.filter(*cloud_filtered_xy);
 
-  pass.setInputCloud(cloud_filtered_xy);
+  /*pass.setInputCloud(cloud_filtered_xy);
   pass.setFilterFieldName ("z");
   pass.setFilterLimits (z_clip_min_, z_clip_max_);
-  pass.filter(*cloud_filtered_xyz);
+  pass.filter(*cloud_filtered_xyz);*/
 
-  cloud_filtered_xyz->header.frame_id = "/world";
+  cloud_filtered_xy->header.frame_id = "/world";
   pcl_ros::transformPointCloud("/camera_rgb_optical_frame",
-		      *cloud_filtered_xyz,
+              *cloud_filtered_xy,
 		      *cloud_transformed_back,
-		      *tf_listener);
+              *tf_listener);
 
   cloud_transformed_back->header.frame_id = "/camera_rgb_optical_frame";
 
@@ -91,11 +91,11 @@ int main(int argc, char **argv)
   n->getParam("z_clip_min", z_clip_min_);
   n->getParam("z_clip_max", z_clip_max_);*/
 
-  x_clip_min_ = -0.2;
-  x_clip_max_ = 0.23;
+  x_clip_min_ = -0.18;
+  x_clip_max_ = 0.6;
   y_clip_min_ = -0.65;
-  y_clip_max_ = 0.1;
-  z_clip_min_ = 0.0;
+  y_clip_max_ = -0.15;
+  z_clip_min_ = -0.01;
   z_clip_max_ = 0.4;
 
   ros::Subscriber original_pc_sub = n->subscribe("/camera/depth_registered/points", 1, filterCallback);
