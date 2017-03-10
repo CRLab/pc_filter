@@ -1,6 +1,5 @@
 #include "ros/ros.h"
 #include <pcl_conversions/pcl_conversions.h>
-//#include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <pcl/filters/passthrough.h>
 #include <pcl_ros/transforms.h>
@@ -19,12 +18,14 @@ float y_clip_max_;
 float z_clip_min_;
 float z_clip_max_;
 
-bool use_y_clip_;
-bool use_z_clip_;
-bool use_x_clip_;
+std::string filtered_frame_id;
+std::string observed_frame_id;
+std::string input_pc_topic;
+std::string output_pc_topic;
 
 void filterCallback(const sensor_msgs::PointCloud2ConstPtr& sensor_message_pc)
 {
+  ROS_DEBUG("Filtering PointCloud Callback");
   pcl::PCLPointCloud2 original_pc2;
   pcl_conversions::toPCL(*sensor_message_pc, original_pc2);
 
@@ -33,8 +34,11 @@ void filterCallback(const sensor_msgs::PointCloud2ConstPtr& sensor_message_pc)
 
   tf::StampedTransform transform;
   ros::Time now = ros::Time::now();
-  tf_listener->waitForTransform ("/world", "/kinect2_rgb_optical_frame", now, ros::Duration(4.0));
-  tf_listener->lookupTransform ("/world", "/kinect2_rgb_optical_frame", now, transform);
+  ROS_DEBUG("Waiting for world Transform");
+  tf_listener->waitForTransform (observed_frame_id, filtered_frame_id, now, ros::Duration(2.0));
+  ROS_DEBUG("Looking up Transform");
+  tf_listener->lookupTransform (observed_frame_id, filtered_frame_id, now, transform);
+  ROS_DEBUG("Finished Look up Transform");
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_transformed(new pcl::PointCloud<pcl::PointXYZRGB>());
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered_x(new pcl::PointCloud<pcl::PointXYZRGB>());
@@ -42,100 +46,86 @@ void filterCallback(const sensor_msgs::PointCloud2ConstPtr& sensor_message_pc)
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered_xyz(new pcl::PointCloud<pcl::PointXYZRGB>());
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_transformed_back(new pcl::PointCloud<pcl::PointXYZRGB>());
 
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr current_cloud = cloud_transformed;
-
-  original_pc->header.frame_id = "/kinect2_rgb_optical_frame";
-  pcl_ros::transformPointCloud("/world",
+  original_pc->header.frame_id = observed_frame_id;
+  pcl_ros::transformPointCloud(filtered_frame_id,
           *original_pc,
           *cloud_transformed,
           *tf_listener);
 
   pcl::PassThrough<pcl::PointXYZRGB > pass;
 
-  if(use_x_clip_) {
-    pass.setInputCloud(current_cloud);
-    pass.setFilterFieldName ("x");
-    pass.setFilterLimits (x_clip_min_, x_clip_max_);
-    pass.filter(*cloud_filtered_x);
+  ROS_DEBUG_STREAM("filtercloudsize before x: " << cloud_transformed->size());
 
-    current_cloud = cloud_filtered_x;
-  }
+  pass.setInputCloud(cloud_transformed);
+  pass.setFilterFieldName ("x");
+  pass.setFilterLimits (x_clip_min_, x_clip_max_);
+  pass.filter(*cloud_filtered_x);
 
-  if(use_y_clip_) {
-    pass.setInputCloud(current_cloud);
-    pass.setFilterFieldName ("y");
-    pass.setFilterLimits (y_clip_min_, y_clip_max_);
-    pass.filter(*cloud_filtered_xy);
+  ROS_DEBUG_STREAM("filtercloudsize before y: " << cloud_filtered_x->size());
 
-    current_cloud = cloud_filtered_xy;
-  }
+  pass.setInputCloud(cloud_filtered_x);
+  pass.setFilterFieldName ("y");
+  pass.setFilterLimits (y_clip_min_, y_clip_max_);
+  pass.filter(*cloud_filtered_xy);
 
-  if(use_z_clip_) {
-    pass.setInputCloud(current_cloud);
-    pass.setFilterFieldName ("z");
-    pass.setFilterLimits (z_clip_min_, z_clip_max_);
-    pass.filter(*cloud_filtered_xyz);
+  ROS_DEBUG_STREAM("filtercloudsize before z: " << cloud_filtered_xy->size());
 
-    current_cloud = cloud_filtered_xyz;
-  }
+  pass.setInputCloud(cloud_filtered_xy);
+  pass.setFilterFieldName ("z");
+  pass.setFilterLimits (z_clip_min_, z_clip_max_);
+  pass.filter(*cloud_filtered_xyz);
 
-  cloud_filtered_xyz->header.frame_id = "/world";
-  pcl_ros::transformPointCloud("/kinect2_rgb_optical_frame",
-              *current_cloud,
+  cloud_filtered_xyz->header.frame_id = filtered_frame_id;
+  pcl_ros::transformPointCloud(observed_frame_id,
+		      *cloud_filtered_xyz,
 		      *cloud_transformed_back,
-              *tf_listener);
+		      *tf_listener);
 
-  cloud_transformed_back->header.frame_id = "/kinect2_rgb_optical_frame";
+  cloud_transformed_back->header.frame_id = observed_frame_id;
 
   pcl::PCLPointCloud2 cloud_transformed_back_pc2;
   pcl::toPCLPointCloud2(*cloud_transformed_back, cloud_transformed_back_pc2);
 
   sensor_msgs::PointCloud2 cloud_transformed_back_msg;
   pcl_conversions::fromPCL(cloud_transformed_back_pc2, cloud_transformed_back_msg);
-
+  ROS_DEBUG("filtercloudsize: ");
+  ROS_DEBUG_STREAM(cloud_transformed_back->size());
   filtered_pc_pub.publish(cloud_transformed_back_msg);
 }
 
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "filteredpcserver");
-  n = new ros::NodeHandle();
+  ros::NodeHandle n_;
   tf::TransformListener tfl;
   tf_listener = &tfl;
+  n = &n_;
 
-  n->getParam("x_clip_min", x_clip_min_);
-  n->getParam("x_clip_max", x_clip_max_);
-  n->getParam("y_clip_min", y_clip_min_);
-  n->getParam("y_clip_max", y_clip_max_);
-  n->getParam("z_clip_min", z_clip_min_);
-  n->getParam("z_clip_max", z_clip_max_);
+  n_.getParam("xpassthrough/filter_limit_min", x_clip_min_);
+  n_.getParam("xpassthrough/filter_limit_max", x_clip_max_);
+  n_.getParam("ypassthrough/filter_limit_min", y_clip_min_);
+  n_.getParam("ypassthrough/filter_limit_max", y_clip_max_);
+  n_.getParam("zpassthrough/filter_limit_min", z_clip_min_);
+  n_.getParam("zpassthrough/filter_limit_max", z_clip_max_);
+  n_.getParam("observed_frame_id", observed_frame_id);
+  n_.getParam("filtered_frame_id", filtered_frame_id);
+  n_.getParam("input_pc_topic", input_pc_topic);
+  n_.getParam("output_pc_topic", output_pc_topic);
 
-  n->getParam("use_y_clip", use_y_clip_);
-  n->getParam("use_z_clip", use_z_clip_);
-  n->getParam("use_x_clip", use_x_clip_);
-//Old setup
-  x_clip_min_ = -0.18;
-  x_clip_max_ = 0.6;
-  y_clip_min_ = -0.65;
-  y_clip_max_ = -0.15;
-  z_clip_min_ = -0.1;
-  z_clip_max_ = 0.35;
+  ROS_INFO_STREAM("Listening on this input pc topic " << input_pc_topic);
+  ROS_INFO_STREAM("Listening on this output pc topic " << output_pc_topic);
+  ROS_INFO_STREAM("Listening on this observed_frame_id " << observed_frame_id);
+  ROS_INFO_STREAM("Listening on this filtered_frame_id " << filtered_frame_id);
+  ROS_INFO_STREAM("Dimensions for filtered scene are: (" << x_clip_min_ << ", " << x_clip_max_ << ") (" << y_clip_min_ << ", " << y_clip_max_ << ") (" << z_clip_min_ << ", " << z_clip_max_ << ")");
 
-//New setup
-  x_clip_min_ = -0.5;
-  x_clip_max_ = -0.1;
-  y_clip_min_ = 0.0;
-  y_clip_max_ = 0.32;
-  z_clip_min_ = -0.1;
-  z_clip_max_ = 0.35;
+  ros::Time now = ros::Time::now();
 
-  use_y_clip_ = true;
-//  use_z_clip_ = true;
-  use_x_clip_ = true;
+  tf_listener->waitForTransform (observed_frame_id, filtered_frame_id, now, ros::Duration(10.0));
 
-  ros::Subscriber original_pc_sub = n->subscribe("/kinect2/hd/points", 1, filterCallback);
-  filtered_pc_pub = n->advertise<sensor_msgs::PointCloud2>("filtered_pc", 1);
+  ros::Subscriber original_pc_sub = n_.subscribe(input_pc_topic, 1, filterCallback);
+  filtered_pc_pub = n_.advertise<sensor_msgs::PointCloud2>(output_pc_topic, 1);
 
   ros::spin();
   return 0;
 }
+
