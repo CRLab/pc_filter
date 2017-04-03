@@ -114,7 +114,7 @@ int main(int argc, char **argv)
   ROS_INFO("WAITING for Checkerboard detection to find world frame");
  
   tf_listener->waitForTransform (output_frame_id, frame_id, now, ros::Duration(10.0));
-  ROS_INFO("Checkerboard detection has found world frame or TIMED OUT!");
+  //ROS_INFO("Checkerboard detection has found world frame or TIMED OUT!");
 
   ros::Subscriber original_pc_sub = n_.subscribe(pc_topic, 1, filterCallback);
   filtered_pc_pub = n_.advertise<sensor_msgs::PointCloud2>("filtered_pc", 1);
