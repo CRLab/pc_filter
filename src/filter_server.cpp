@@ -25,7 +25,7 @@ std::string output_pc_topic;
 
 void filterCallback(const sensor_msgs::PointCloud2ConstPtr& sensor_message_pc)
 {
-  ROS_DEBUG("Filtering PointCloud Callback");
+  ROS_INFO("Filtering PointCloud Callback");
   pcl::PCLPointCloud2 original_pc2;
   pcl_conversions::toPCL(*sensor_message_pc, original_pc2);
 
@@ -34,11 +34,18 @@ void filterCallback(const sensor_msgs::PointCloud2ConstPtr& sensor_message_pc)
 
   tf::StampedTransform transform;
   ros::Time now = ros::Time::now();
-  ROS_DEBUG("Waiting for world Transform");
-  tf_listener->waitForTransform (observed_frame_id, filtered_frame_id, now, ros::Duration(2.0));
-  ROS_DEBUG("Looking up Transform");
-  tf_listener->lookupTransform (observed_frame_id, filtered_frame_id, now, transform);
-  ROS_DEBUG("Finished Look up Transform");
+    try{
+        ROS_INFO("Waiting for world Transform");
+        tf_listener->waitForTransform (observed_frame_id, filtered_frame_id, now, ros::Duration(10.0));
+        ROS_INFO("Looking up Transform");
+        tf_listener->lookupTransform (observed_frame_id, filtered_frame_id, now, transform);
+        ROS_INFO("Finished Look up Transform");
+    }
+    catch (tf::TransformException ex){
+        ROS_ERROR("%s",ex.what());
+        return;
+    }
+
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_transformed(new pcl::PointCloud<pcl::PointXYZRGB>());
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered_x(new pcl::PointCloud<pcl::PointXYZRGB>());
@@ -54,21 +61,21 @@ void filterCallback(const sensor_msgs::PointCloud2ConstPtr& sensor_message_pc)
 
   pcl::PassThrough<pcl::PointXYZRGB > pass;
 
-  ROS_DEBUG_STREAM("filtercloudsize before x: " << cloud_transformed->size());
+  ROS_INFO_STREAM("filtercloudsize before x: " << cloud_transformed->size());
 
   pass.setInputCloud(cloud_transformed);
   pass.setFilterFieldName ("x");
   pass.setFilterLimits (x_clip_min_, x_clip_max_);
   pass.filter(*cloud_filtered_x);
 
-  ROS_DEBUG_STREAM("filtercloudsize before y: " << cloud_filtered_x->size());
+  ROS_INFO_STREAM("filtercloudsize before y: " << cloud_filtered_x->size());
 
   pass.setInputCloud(cloud_filtered_x);
   pass.setFilterFieldName ("y");
   pass.setFilterLimits (y_clip_min_, y_clip_max_);
   pass.filter(*cloud_filtered_xy);
 
-  ROS_DEBUG_STREAM("filtercloudsize before z: " << cloud_filtered_xy->size());
+  ROS_INFO_STREAM("filtercloudsize before z: " << cloud_filtered_xy->size());
 
   pass.setInputCloud(cloud_filtered_xy);
   pass.setFilterFieldName ("z");
@@ -88,8 +95,8 @@ void filterCallback(const sensor_msgs::PointCloud2ConstPtr& sensor_message_pc)
 
   sensor_msgs::PointCloud2 cloud_transformed_back_msg;
   pcl_conversions::fromPCL(cloud_transformed_back_pc2, cloud_transformed_back_msg);
-  ROS_DEBUG("filtercloudsize: ");
-  ROS_DEBUG_STREAM(cloud_transformed_back->size());
+  ROS_INFO("filtercloudsize: ");
+  ROS_INFO_STREAM(cloud_transformed_back->size());
   filtered_pc_pub.publish(cloud_transformed_back_msg);
 }
 
