@@ -20,4 +20,7 @@ zpassthrough:
   filter_limit_negative: False
   input_frame: 'world'
   
-    
+input_pc_topic: "/camera/depth_registered/points"
+output_pc_topic: "/filtered_pc"
+observed_frame_id: "/camera_depth_optical_frame"
+filtered_frame_id: "/world"
