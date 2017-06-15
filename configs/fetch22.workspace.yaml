@@ -5,7 +5,6 @@ xpassthrough:
   filter_limit_max: 0.5
   filter_limit_negative: False
   input_frame: 'world'
-  output_frame: 'world'
 
 ypassthrough:
   filter_field_name: y
@@ -13,7 +12,6 @@ ypassthrough:
   filter_limit_max: 0.5
   filter_limit_negative: False
   input_frame: 'world'
-  output_frame: 'world'
 
 zpassthrough:
   filter_field_name: z
@@ -21,6 +19,8 @@ zpassthrough:
   filter_limit_max: 1.0
   filter_limit_negative: False
   input_frame: 'world'
-  output_frame: 'world'
-  
-    
+
+input_pc_topic: "/head_camera/depth_registered/points"
+output_pc_topic: "/filtered_pc"
+observed_frame_id: "/head_camera_rgb_optical_frame"
+filtered_frame_id: "/world"

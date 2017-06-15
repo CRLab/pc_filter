@@ -25,7 +25,7 @@ std::string output_pc_topic;
 
 void filterCallback(const sensor_msgs::PointCloud2ConstPtr& sensor_message_pc)
 {
-  ROS_INFO("Filtering PointCloud Callback");
+  ROS_DEBUG("Filtering PointCloud Callback");
   pcl::PCLPointCloud2 original_pc2;
   pcl_conversions::toPCL(*sensor_message_pc, original_pc2);
 
