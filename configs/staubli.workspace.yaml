@@ -15,7 +15,7 @@ ypassthrough:
 
 zpassthrough:
   filter_field_name: z
-  filter_limit_min: 0.10
+  filter_limit_min: 0.11
   filter_limit_max: 0.5
   filter_limit_negative: False
   input_frame: 'world'
