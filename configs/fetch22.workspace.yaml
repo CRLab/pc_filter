@@ -1,26 +1,26 @@
 ---
 xpassthrough:
   filter_field_name: x
-  filter_limit_min: -0.3
-  filter_limit_max: 0.5
+  filter_limit_min: 0.487
+  filter_limit_max: 0.887
   filter_limit_negative: False
-  input_frame: 'world'
+  input_frame: 'base_link'
 
 ypassthrough:
   filter_field_name: y
-  filter_limit_min: -1.0
-  filter_limit_max: 0.5
+  filter_limit_min: -0.33
+  filter_limit_max: 0.23
   filter_limit_negative: False
-  input_frame: 'world'
+  input_frame: 'base_link'
 
 zpassthrough:
   filter_field_name: z
-  filter_limit_min: 0.035
+  filter_limit_min: 0.73
   filter_limit_max: 1.0
   filter_limit_negative: False
-  input_frame: 'world'
+  input_frame: 'base_link'
 
 input_pc_topic: "/head_camera/depth_registered/points"
 output_pc_topic: "/filtered_pc"
 observed_frame_id: "/head_camera_rgb_optical_frame"
-filtered_frame_id: "/world"
+filtered_frame_id: "/base_link"
