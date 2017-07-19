@@ -20,10 +20,19 @@ Place the following in a launch file:
 ```
 <launch>
    <group ns="pc_filter">
-      <>
-      <rosparam command="load" file="$(find pc_filter)/configs/$(arg config_file_name).workspace.yaml" />
-      <node name="$(arg node_name)" pkg="pc_filter" type="server" output="screen"/>
+      <param name="xpassthrough/filter_limit_min" value="0" />
+      <param name="ypassthrough/filter_limit_min" value="0" />
+      <param name="zpassthrough/filter_limit_min" value="0" />
+      <param name="xpassthrough/filter_limit_max" value="1" />
+      <param name="ypassthrough/filter_limit_max" value="1" />
+      <param name="zpassthrough/filter_limit_max" value="1" />
+      
+      <param name="observed_frame_id" value="/kinect2_link" />
+      <param name="filtered_frame_id" value="/world" />
+      <param name="input_pc_topic value="/kinect2/hd/points" />
+      <param name="output_pc_topic" value="/filtered_pc" />
+      
+      <node name="kinect2_pc_filter" pkg="pc_filter" type="pc_filter" output="screen"/>
    </group>
 </launch>
-
 ```
