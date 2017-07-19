@@ -1,9 +1,0 @@
-<launch>
-   <arg name="namespace" />
-   <arg name="config_file_name" />
-   <arg name="node_name" default="pc_filter" />
-   <group ns="$(arg namespace)">
-      <rosparam command="load" file="$(find pc_filter)/configs/$(arg config_file_name).workspace.yaml" />
-      <node name="$(arg node_name)" pkg="pc_filter" type="server" output="screen"/>
-   </group>
-</launch>
