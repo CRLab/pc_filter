@@ -101,7 +101,7 @@ add_definitions(${PCL_DEFINITIONS})
 
 ## Declare a cpp executable
 # add_executable(test_node src/test_node.cpp)
-add_executable(server src/filter_server.cpp)
+add_executable(pc_filter src/pc_filter.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -111,7 +111,7 @@ add_executable(server src/filter_server.cpp)
 # target_link_libraries(test_node
 #   ${catkin_LIBRARIES}
 # )
-target_link_libraries(server ${PCL_LIBS} ${catkin_LIBRARIES})
+target_link_libraries(pc_filter ${PCL_LIBS} ${catkin_LIBRARIES})
 
 #############
 ## Install ##
