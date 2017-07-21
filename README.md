@@ -29,7 +29,7 @@ Place the following in a launch file:
       
       <param name="observed_frame_id" value="/kinect2_link" />
       <param name="filtered_frame_id" value="/world" />
-      <param name="input_pc_topic value="/kinect2/hd/points" />
+      <param name="input_pc_topic" value="/kinect2/hd/points" />
       <param name="output_pc_topic" value="/filtered_pc" />
       
       <node name="kinect2_pc_filter" pkg="pc_filter" type="pc_filter" output="screen"/>
