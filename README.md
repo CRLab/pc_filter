@@ -1,6 +1,10 @@
 # pc_filter
 ROS node to filter a pointcloud via a pass through filter
 
+Part of the pc_pipeline:
+
+https://github.com/CURG/pc_pipeline_launch
+
 ## Parameters
 ```
 xpassthrough/filter_limit_min: minimum x, anything below in x is filtered out
