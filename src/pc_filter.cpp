@@ -94,6 +94,7 @@ void filterCallback(const sensor_msgs::PointCloud2ConstPtr& sensor_message_pc)
   pcl::toPCLPointCloud2(*cloud_transformed_back, cloud_transformed_back_pc2);
 
   sensor_msgs::PointCloud2 cloud_transformed_back_msg;
+  cloud_transformed_back_msg.header.frame_id = observed_frame_id;
   pcl_conversions::fromPCL(cloud_transformed_back_pc2, cloud_transformed_back_msg);
   ROS_DEBUG("filtercloudsize: ");
   ROS_DEBUG_STREAM(cloud_transformed_back->size());
