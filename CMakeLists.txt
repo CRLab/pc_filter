@@ -6,7 +6,7 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED sensor_msgs pcl_ros)
+find_package(catkin REQUIRED sensor_msgs pcl_ros roscpp)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -91,7 +91,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include)
-include_directories(${PCL_INCLUDE_DIRS})
+include_directories(${PCL_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 ## Declare a cpp library
