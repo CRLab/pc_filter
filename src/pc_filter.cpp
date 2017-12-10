@@ -1,6 +1,7 @@
 #include "ros/ros.h"
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
+#include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/passthrough.h>
 #include <pcl_ros/transforms.h>
 #include <tf/transform_listener.h>
@@ -17,6 +18,8 @@ float y_clip_min_;
 float y_clip_max_;
 float z_clip_min_;
 float z_clip_max_;
+
+float downsample_;
 
 std::string filtered_frame_id;
 std::string observed_frame_id;
@@ -51,6 +54,7 @@ void filterCallback(const sensor_msgs::PointCloud2ConstPtr& sensor_message_pc)
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered_x(new pcl::PointCloud<pcl::PointXYZRGB>());
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered_xy(new pcl::PointCloud<pcl::PointXYZRGB>());
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered_xyz(new pcl::PointCloud<pcl::PointXYZRGB>());
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_downsampled(new pcl::PointCloud<pcl::PointXYZRGB>());
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_transformed_back(new pcl::PointCloud<pcl::PointXYZRGB>());
 
   original_pc->header.frame_id = observed_frame_id;
@@ -90,12 +94,20 @@ void filterCallback(const sensor_msgs::PointCloud2ConstPtr& sensor_message_pc)
 
   cloud_transformed_back->header.frame_id = observed_frame_id;
 
-  pcl::PCLPointCloud2 cloud_transformed_back_pc2;
-  pcl::toPCLPointCloud2(*cloud_transformed_back, cloud_transformed_back_pc2);
+  pcl::PCLPointCloud2Ptr cloud_transformed_back_pc2(new pcl::PCLPointCloud2());
+  pcl::toPCLPointCloud2(*cloud_transformed_back, *cloud_transformed_back_pc2);
+
+  ROS_DEBUG_STREAM("filtercloudsize before downsample: " << cloud_transformed_back_pc2->data.size());
+
+  pcl::PCLPointCloud2 cloud_filtered_downsampled;
+  pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
+  sor.setInputCloud (cloud_transformed_back_pc2);
+  sor.setLeafSize (downsample_, downsample_, downsample_);
+  sor.filter (cloud_filtered_downsampled);
 
   sensor_msgs::PointCloud2 cloud_transformed_back_msg;
   cloud_transformed_back_msg.header.frame_id = observed_frame_id;
-  pcl_conversions::fromPCL(cloud_transformed_back_pc2, cloud_transformed_back_msg);
+  pcl_conversions::fromPCL(cloud_filtered_downsampled, cloud_transformed_back_msg);
   ROS_DEBUG("filtercloudsize: ");
   ROS_DEBUG_STREAM(cloud_transformed_back->size());
   filtered_pc_pub.publish(cloud_transformed_back_msg);
@@ -115,6 +127,9 @@ int main(int argc, char **argv)
   n_.getParam("ypassthrough/filter_limit_max", y_clip_max_);
   n_.getParam("zpassthrough/filter_limit_min", z_clip_min_);
   n_.getParam("zpassthrough/filter_limit_max", z_clip_max_);
+
+  n_.getParam("downsample", downsample_);
+
   n_.getParam("observed_frame_id", observed_frame_id);
   n_.getParam("filtered_frame_id", filtered_frame_id);
   n_.getParam("input_pc_topic", input_pc_topic);
