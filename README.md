@@ -6,19 +6,17 @@ Part of the pc_pipeline:
 https://github.com/CURG/pc_pipeline_launch
 
 ## Parameters
-```
-xpassthrough/filter_limit_min: minimum x, anything below in x is filtered out
-xpassthrough/filter_limit_max: max x, anything above in x is filtered out
-ypassthrough/filter_limit_min: minimum y, anything below in y is filtered out
-ypassthrough/filter_limit_max: max y, anything above in y is filtered out
-zpassthrough/filter_limit_min: minimum z, anything below in z is filtered out
-zpassthrough/filter_limit_max: max z, anything above in z is filtered out
-observed_frame_id: This is the frame of reference for the original unfiltered pointcloud
-filtered_frame_id: This is the frame of reference that the filtered pointcloud will be rebroadcast in
-input_pc_topic: This is the ROS topic the unfiltered pointcloud is being published on.
-output_pc_topic: This is the ROS topic in which the filtered pointcloud will be published.
-downsample: The leaf size of the downsampled point cloud (0 < downsample <= 1.0).
-```
+- `xpassthrough/filter_limit_min`: minimum x, anything below in x is filtered out
+- `xpassthrough/filter_limit_max`: max x, anything above in x is filtered out
+- `ypassthrough/filter_limit_min`: minimum y, anything below in y is filtered out
+- `ypassthrough/filter_limit_max`: max y, anything above in y is filtered out
+- `zpassthrough/filter_limit_min`: minimum z, anything below in z is filtered out
+- `zpassthrough/filter_limit_max`: max z, anything above in z is filtered out
+- `observed_frame_id`: This is the frame of reference for the original unfiltered pointcloud
+- `filtered_frame_id`: This is the frame of reference that the filtered pointcloud will be rebroadcast in
+- `input_pc_topic`: This is the ROS topic the unfiltered pointcloud is being published on.
+- `output_pc_topic`: This is the ROS topic in which the filtered pointcloud will be published.
+- `downsample`: The leaf size of the downsampled point cloud in meters.
 
 ## Usage
 Place the following in a launch file:
@@ -31,7 +29,7 @@ Place the following in a launch file:
       <param name="xpassthrough/filter_limit_max" value="1" />
       <param name="ypassthrough/filter_limit_max" value="1" />
       <param name="zpassthrough/filter_limit_max" value="1" />
-      <param name="downsample" value="1.0" />
+      <param name="downsample" value="0.01" />
       
       <param name="observed_frame_id" value="/kinect2_link" />
       <param name="filtered_frame_id" value="/world" />
