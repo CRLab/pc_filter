@@ -100,16 +100,19 @@ void filterCallback(const sensor_msgs::PointCloud2ConstPtr& sensor_message_pc)
   ROS_DEBUG_STREAM("filtercloudsize before downsample: " << cloud_transformed_back_pc2->data.size());
 
   pcl::PCLPointCloud2 cloud_filtered_downsampled;
-  pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
-  sor.setInputCloud (cloud_transformed_back_pc2);
-  sor.setLeafSize (downsample_, downsample_, downsample_);
-  sor.filter (cloud_filtered_downsampled);
+  if(downsample_) {
+    pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
+    sor.setInputCloud (cloud_transformed_back_pc2);
+    sor.setLeafSize (downsample_, downsample_, downsample_);
+    sor.filter (cloud_filtered_downsampled);
+  } else {
+    cloud_filtered_downsampled = *cloud_transformed_back_pc2;
+  }
 
   sensor_msgs::PointCloud2 cloud_transformed_back_msg;
   cloud_transformed_back_msg.header.frame_id = observed_frame_id;
   pcl_conversions::fromPCL(cloud_filtered_downsampled, cloud_transformed_back_msg);
-  ROS_DEBUG("filtercloudsize: ");
-  ROS_DEBUG_STREAM(cloud_transformed_back->size());
+  ROS_DEBUG_STREAM("filtercloudsize: " << cloud_transformed_back->size());
   filtered_pc_pub.publish(cloud_transformed_back_msg);
 }
 

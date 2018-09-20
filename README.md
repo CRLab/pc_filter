@@ -16,7 +16,7 @@ https://github.com/CURG/pc_pipeline_launch
 - `filtered_frame_id`: This is the frame of reference that the filtered pointcloud will be rebroadcast in
 - `input_pc_topic`: This is the ROS topic the unfiltered pointcloud is being published on.
 - `output_pc_topic`: This is the ROS topic in which the filtered pointcloud will be published.
-- `downsample`: The leaf size of the downsampled point cloud in meters.
+- `downsample`: The leaf size of the downsampled point cloud in meters. Set to 0 to skip downsample.
 
 ## Usage
 Place the following in a launch file:
