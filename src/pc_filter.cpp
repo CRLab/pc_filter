@@ -7,6 +7,8 @@
 #include <tf/transform_listener.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <pcl/io/pcd_io.h>
+#include <iostream>
+#include <memory>
 
 ros::Publisher filtered_pc_pub;
 tf::TransformListener *tf_listener;
